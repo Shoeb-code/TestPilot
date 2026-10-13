@@ -1,0 +1,252 @@
+{
+  "name": "testpilot",
+  "displayName": "TestPilot — Intelligent VS Code Testing Assistant",
+  "description": "Analyze functions, generate comprehensive Jest/Vitest unit tests, execute test suites, and diagnose failures natively in VS Code.",
+  "version": "1.0.0",
+  "publisher": "testpilot-team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/testpilot-team/testpilot.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Testing",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "test",
+    "testing",
+    "unit test",
+    "jest",
+    "vitest",
+    "test generator",
+    "test runner",
+    "ast",
+    "failure analysis"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescriptreact",
+    "onCommand:testpilot.generateTestCases",
+    "onCommand:testpilot.generateTestFile",
+    "onCommand:testpilot.runCurrentTestFile",
+    "onCommand:testpilot.analyzeTestFailure",
+    "onCommand:testpilot.showTestPilot",
+    "onCommand:testpilot.configureSettings"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "testpilot.generateTestCases",
+        "title": "TestPilot: Generate Test Cases",
+        "category": "TestPilot",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "testpilot.generateTestFile",
+        "title": "TestPilot: Generate Test File",
+        "category": "TestPilot",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "testpilot.runCurrentTestFile",
+        "title": "TestPilot: Run Current Test File",
+        "category": "TestPilot",
+        "icon": "$(play)"
+      },
+      {
+        "command": "testpilot.analyzeTestFailure",
+        "title": "TestPilot: Analyze Test Failure",
+        "category": "TestPilot",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "testpilot.showTestPilot",
+        "title": "TestPilot: Show TestPilot",
+        "category": "TestPilot",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "testpilot.configureSettings",
+        "title": "TestPilot: Configure Settings",
+        "category": "TestPilot",
+        "icon": "$(gear)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "testpilot.generateTestCases",
+          "when": "editorTextFocus && editorLangId =~ /^(javascript|typescript|javascriptreact|typescriptreact)$/",
+          "group": "7_modification@1"
+        },
+        {
+          "command": "testpilot.generateTestFile",
+          "when": "editorTextFocus && editorLangId =~ /^(javascript|typescript|javascriptreact|typescriptreact)$/",
+          "group": "7_modification@2"
+        },
+        {
+          "command": "testpilot.runCurrentTestFile",
+          "when": "editorTextFocus && resourceFilename =~ /.*(test|spec)\\.(js|ts|jsx|tsx)$/",
+          "group": "7_modification@3"
+        },
+        {
+          "command": "testpilot.analyzeTestFailure",
+          "when": "editorTextFocus",
+          "group": "7_modification@4"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "testpilot.generateTestCases"
+        },
+        {
+          "command": "testpilot.generateTestFile"
+        },
+        {
+          "command": "testpilot.runCurrentTestFile"
+        },
+        {
+          "command": "testpilot.analyzeTestFailure"
+        },
+        {
+          "command": "testpilot.showTestPilot"
+        },
+        {
+          "command": "testpilot.configureSettings"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "testpilot-sidebar",
+          "title": "TestPilot",
+          "icon": "$(beaker)"
+        }
+      ]
+    },
+    "views": {
+      "testpilot-sidebar": [
+        {
+          "id": "testpilot.overview",
+          "name": "TestPilot Assistant"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "TestPilot",
+      "properties": {
+        "testpilot.defaultFramework": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "jest",
+            "vitest"
+          ],
+          "default": "auto",
+          "description": "Default unit test framework to use for generation and execution."
+        },
+        "testpilot.testFileNaming": {
+          "type": "string",
+          "enum": [
+            "[name].test.[ext]",
+            "[name].spec.[ext]"
+          ],
+          "default": "[name].test.[ext]",
+          "description": "Naming convention for newly generated test files."
+        },
+        "testpilot.testDirectory": {
+          "type": "string",
+          "enum": [
+            "same-directory",
+            "__tests__",
+            "test",
+            "tests"
+          ],
+          "default": "same-directory",
+          "description": "Target folder for generated test files."
+        },
+        "testpilot.executionTimeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "Maximum execution timeout in milliseconds for running tests."
+        },
+        "testpilot.preferredPackageManager": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "npm",
+            "yarn",
+            "pnpm"
+          ],
+          "default": "auto",
+          "description": "Preferred package manager binary for launching test suites."
+        },
+        "testpilot.ai.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable optional AI-assisted test scenario augmentation. All core features work 100% locally without AI."
+        },
+        "testpilot.ai.provider": {
+          "type": "string",
+          "enum": [
+            "offline",
+            "openai-compatible",
+            "anthropic-compatible"
+          ],
+          "default": "offline",
+          "description": "AI provider service to use for optional suggestions."
+        },
+        "testpilot.ai.model": {
+          "type": "string",
+          "default": "",
+          "description": "Model identifier for the optional AI provider."
+        },
+        "testpilot.ai.endpoint": {
+          "type": "string",
+          "default": "",
+          "description": "Custom API endpoint URL for the optional AI provider."
+        },
+        "testpilot.ai.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for the optional AI provider."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "mocha --require ts-node/register --require ./test/setup.js --timeout 15000 \"test/unit/**/*.test.ts\" \"test/integration/**/*.test.ts\" \"test/security/**/*.test.ts\"",
+    "test:unit": "mocha --require ts-node/register --require ./test/setup.js --timeout 10000 \"test/unit/**/*.test.ts\"",
+    "test:integration": "mocha --require ts-node/register --require ./test/setup.js --timeout 15000 \"test/integration/**/*.test.ts\"",
+    "test:security": "mocha --require ts-node/register --require ./test/setup.js --timeout 10000 \"test/security/**/*.test.ts\"",
+    "lint": "eslint src --ext ts",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "package": "npx @vscode/vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "typescript": "^5.4.5"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.12.7",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.24.0",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^7.7.0",
+    "@typescript-eslint/parser": "^7.7.0",
+    "mocha": "^10.4.0",
+    "prettier": "^3.2.5",
+    "ts-node": "^10.9.2"
+  }
+}

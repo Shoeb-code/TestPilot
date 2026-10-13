@@ -1,0 +1,13 @@
+{
+  "name": "sample-ts-project",
+  "version": "1.0.0",
+  "description": "Example TypeScript project for TestPilot testing",
+  "main": "src/calculator.ts",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vitest": "^1.5.0"
+  }
+}

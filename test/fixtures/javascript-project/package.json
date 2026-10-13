@@ -1,0 +1,12 @@
+{
+  "name": "sample-js-project",
+  "version": "1.0.0",
+  "description": "Example JavaScript project for TestPilot testing",
+  "main": "src/math.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
