@@ -208,11 +208,11 @@ export class TestCaseReviewPanel {
       <div class="card ${c.selected ? 'card-selected' : ''}" id="card-${c.id}">
         <div class="card-header">
           <label class="checkbox-container">
-            <input type="checkbox" id="check-${c.id}" ${c.selected ? 'checked' : ''} onchange="toggleCase('${c.id}')" />
+            <input type="checkbox" class="case-checkbox" data-case-id="${c.id}" id="check-${c.id}" ${c.selected ? 'checked' : ''} />
             <span class="checkmark"></span>
           </label>
           <div class="card-title-group">
-            <input type="text" class="test-name-input" id="name-${c.id}" value="${this.escapeHtml(c.testName)}" onchange="updateCase('${c.id}')" />
+            <input type="text" class="test-name-input" data-case-id="${c.id}" id="name-${c.id}" value="${this.escapeHtml(c.testName)}" />
             <div class="badges">
               ${categoryBadge(c.category)}
               <span class="confidence-tag">${c.confidence}</span>
@@ -222,7 +222,7 @@ export class TestCaseReviewPanel {
         <div class="card-body">
           <div class="meta-row">
             <span class="meta-label">Inputs:</span>
-            <input type="text" class="input-args-input" id="args-${c.id}" value="${this.escapeHtml(c.inputArgs.join(', '))}" onchange="updateCase('${c.id}')" />
+            <input type="text" class="input-args-input" data-case-id="${c.id}" id="args-${c.id}" value="${this.escapeHtml(c.inputArgs.join(', '))}" />
           </div>
           <div class="meta-row">
             <span class="meta-label">Expectation:</span>
@@ -441,21 +441,21 @@ export class TestCaseReviewPanel {
       </div>
     </div>
     <div>
-      <button class="btn" onclick="generateFile()">✨ Generate Test File (${selectedCount} selected)</button>
+      <button class="btn" id="btn-generate-file">✨ Generate Test File (${selectedCount} selected)</button>
     </div>
   </div>
 
   <div class="toolbar">
     <label>Framework:
-      <select id="framework-select" onchange="setFramework(this.value)">
+      <select id="framework-select">
         <option value="jest" ${this.framework === 'jest' ? 'selected' : ''}>Jest</option>
         <option value="vitest" ${this.framework === 'vitest' ? 'selected' : ''}>Vitest</option>
       </select>
     </label>
-    <button class="btn btn-secondary" onclick="toggleAll(true)">Select All</button>
-    <button class="btn btn-secondary" onclick="toggleAll(false)">Deselect All</button>
-    <button class="btn btn-secondary" onclick="regenerate()">🔄 Regenerate</button>
-    <button class="btn btn-secondary" onclick="requestAi()">✨ Ask AI for Edge Cases</button>
+    <button class="btn btn-secondary" id="btn-select-all">Select All</button>
+    <button class="btn btn-secondary" id="btn-deselect-all">Deselect All</button>
+    <button class="btn btn-secondary" id="btn-regenerate">🔄 Regenerate</button>
+    <button class="btn btn-secondary" id="btn-request-ai">✨ Ask AI for Edge Cases</button>
   </div>
 
   <div class="card-list">
@@ -465,44 +465,69 @@ export class TestCaseReviewPanel {
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
 
-    function toggleCase(id) {
-      vscode.postMessage({ command: 'toggleCase', id });
-      const card = document.getElementById('card-' + id);
-      const chk = document.getElementById('check-' + id);
-      if (card && chk) {
-        if (chk.checked) {
-          card.classList.add('card-selected');
-        } else {
-          card.classList.remove('card-selected');
+    // Button event listeners
+    document.getElementById('btn-generate-file')?.addEventListener('click', () => {
+      vscode.postMessage({ command: 'generateFile' });
+    });
+
+    document.getElementById('btn-select-all')?.addEventListener('click', () => {
+      vscode.postMessage({ command: 'toggleAll', select: true });
+    });
+
+    document.getElementById('btn-deselect-all')?.addEventListener('click', () => {
+      vscode.postMessage({ command: 'toggleAll', select: false });
+    });
+
+    document.getElementById('btn-regenerate')?.addEventListener('click', () => {
+      vscode.postMessage({ command: 'regenerate' });
+    });
+
+    document.getElementById('btn-request-ai')?.addEventListener('click', () => {
+      vscode.postMessage({ command: 'requestAi' });
+    });
+
+    document.getElementById('framework-select')?.addEventListener('change', (e) => {
+      const target = e.target;
+      if (target && target.value) {
+        vscode.postMessage({ command: 'setFramework', framework: target.value });
+      }
+    });
+
+    // Event delegation for card checkboxes and text inputs
+    document.addEventListener('change', (e) => {
+      const target = e.target;
+      if (!target) return;
+
+      if (target.classList && target.classList.contains('case-checkbox')) {
+        const id = target.getAttribute('data-case-id');
+        if (id) {
+          vscode.postMessage({ command: 'toggleCase', id });
+          const card = document.getElementById('card-' + id);
+          if (card) {
+            if (target.checked) {
+              card.classList.add('card-selected');
+            } else {
+              card.classList.remove('card-selected');
+            }
+          }
+          // Update selected count in button
+          const selected = document.querySelectorAll('.case-checkbox:checked').length;
+          const genBtn = document.getElementById('btn-generate-file');
+          if (genBtn) {
+            genBtn.textContent = '✨ Generate Test File (' + selected + ' selected)';
+          }
+        }
+      } else if (target.classList && (target.classList.contains('test-name-input') || target.classList.contains('input-args-input'))) {
+        const id = target.getAttribute('data-case-id');
+        if (id) {
+          const nameEl = document.getElementById('name-' + id);
+          const argsEl = document.getElementById('args-' + id);
+          const name = nameEl ? nameEl.value : '';
+          const args = argsEl ? argsEl.value : '';
+          vscode.postMessage({ command: 'updateCase', id, testName: name, inputArgsStr: args });
         }
       }
-    }
-
-    function toggleAll(select) {
-      vscode.postMessage({ command: 'toggleAll', select });
-    }
-
-    function updateCase(id) {
-      const name = document.getElementById('name-' + id)?.value;
-      const args = document.getElementById('args-' + id)?.value;
-      vscode.postMessage({ command: 'updateCase', id, testName: name, inputArgsStr: args });
-    }
-
-    function setFramework(framework) {
-      vscode.postMessage({ command: 'setFramework', framework });
-    }
-
-    function regenerate() {
-      vscode.postMessage({ command: 'regenerate' });
-    }
-
-    function requestAi() {
-      vscode.postMessage({ command: 'requestAi' });
-    }
-
-    function generateFile() {
-      vscode.postMessage({ command: 'generateFile' });
-    }
+    });
   </script>
 </body>
 </html>`;
